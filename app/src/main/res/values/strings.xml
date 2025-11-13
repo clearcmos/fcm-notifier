@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FCM Notifier</string>
+    <string name="default_notification_channel_id">fcm_default_channel</string>
+    <string name="default_notification_channel_name">Default Notifications</string>
+    <string name="token_label">FCM Token:</string>
+    <string name="copy_token">Copy Token</string>
+    <string name="token_copied">Token copied to clipboard</string>
+    <string name="permission_required">Notification permission required</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="notification_log">Notification Log</string>
+    <string name="clear_log">Clear Log</string>
+</resources>
