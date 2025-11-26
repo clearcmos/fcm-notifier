@@ -405,15 +405,20 @@ nix develop
 
 ### Gradle Commands
 
+**Always prefix with `nix develop --command` to get the Android SDK:**
+
 ```bash
-# Build and install
-./gradlew installDebug
+# Build and install to connected phone (preferred)
+nix develop --command ./gradlew installDebug
+
+# Build only (no install)
+nix develop --command ./gradlew assembleDebug
 
 # Clean build
-./gradlew clean assembleDebug
+nix develop --command ./gradlew clean assembleDebug
 
 # Build release APK (requires signing)
-./gradlew assembleRelease
+nix develop --command ./gradlew assembleRelease
 ```
 
 ### Firebase Configuration
@@ -536,9 +541,15 @@ adb shell appops set com.bedrosn.fcmnotifier USE_FULL_SCREEN_INTENT allow
 ### Making Changes
 
 1. **Read existing files** - Always read files before editing
-2. **Test locally** - Use `./gradlew installDebug` to install to connected device
-3. **Check logs** - Use `adb logcat` to verify behavior
+2. **Build and install automatically** - After completing code changes, always build and install to the phone:
+   ```bash
+   nix develop --command ./gradlew installDebug
+   ```
+   The phone (Samsung S25) is connected via wireless ADB and ready to receive updates.
+3. **Check logs** - Use `adb logcat` to verify behavior if needed
 4. **Update docs** - Update README.md and this file if needed (no emojis)
+
+**Important:** Always use `nix develop --command` prefix for gradle commands - it provides the Android SDK environment.
 
 ### Documenting Changes in HISTORY.md
 

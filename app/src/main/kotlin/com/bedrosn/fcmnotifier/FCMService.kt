@@ -144,6 +144,9 @@ class FCMService : FirebaseMessagingService() {
             val tapIntent = Intent(this, NotificationTapReceiver::class.java).apply {
                 action = NotificationTapReceiver.ACTION_NOTIFICATION_TAPPED
                 putExtra(NotificationTapReceiver.EXTRA_NOTIFICATION_ID, notificationId)
+                if (!timerId.isNullOrEmpty()) {
+                    putExtra(NotificationTapReceiver.EXTRA_TIMER_ID, timerId)
+                }
             }
             val pendingIntent = PendingIntent.getBroadcast(
                 this,

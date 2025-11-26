@@ -147,3 +147,38 @@
 - KDE to Phone timer dismissal sync works (via FCM push)
 - Full-screen activity dismissed when KDE dismisses
 - Ringtone stops when KDE dismisses
+
+---
+
+## [2025-11-26 02:42:40]
+
+### Changes
+- **Fixed banner tap dismissal not syncing to KDE**
+  - Previously only full-screen dismiss and swipe-away synced to KDE
+  - Tapping the banner notification (while using phone) now also triggers cross-device sync
+  - Root cause: `NotificationTapReceiver` was missing `timer_id` and didn't call Cloud Function
+
+- **Updated FCMService.kt**
+  - Added `timer_id` to tap intent: `putExtra(NotificationTapReceiver.EXTRA_TIMER_ID, timerId)`
+
+- **Updated NotificationTapReceiver.kt**
+  - Added `EXTRA_TIMER_ID` constant
+  - Extract `timer_id` from intent
+  - Call `TimerSyncService.unregisterTimer()` for local cleanup
+  - Call `dismissTimerOnServer()` to notify Cloud Function (copied from NotificationDismissReceiver)
+  - Added required imports for coroutines, JSON, HTTP
+
+### Files Modified
+- `app/src/main/kotlin/com/bedrosn/fcmnotifier/FCMService.kt` - Added timer_id to tap intent
+- `app/src/main/kotlin/com/bedrosn/fcmnotifier/NotificationTapReceiver.kt` - Added cross-device sync logic
+
+### All Dismissal Paths Now Sync
+| Action | Receiver | Syncs to KDE |
+|--------|----------|--------------|
+| Full-screen Dismiss button | NotificationDismissReceiver (via broadcast) | Yes |
+| Swipe away banner | NotificationDismissReceiver (deleteIntent) | Yes |
+| Tap banner | NotificationTapReceiver (contentIntent) | Yes (fixed) |
+
+### Testing Completed
+- Tap banner while using phone -> KDE notification auto-dismisses
+- All three dismissal methods now sync correctly
