@@ -49,6 +49,24 @@
             </intent-filter>
         </service>
 
+        <!-- Broadcast receiver for notification dismissal -->
+        <receiver
+            android:name=".NotificationDismissReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.bedrosn.fcmnotifier.NOTIFICATION_DISMISSED" />
+            </intent-filter>
+        </receiver>
+
+        <!-- Broadcast receiver for notification tap -->
+        <receiver
+            android:name=".NotificationTapReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.bedrosn.fcmnotifier.NOTIFICATION_TAPPED" />
+            </intent-filter>
+        </receiver>
+
         <!-- Firebase default notification channel -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"

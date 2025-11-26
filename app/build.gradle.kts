@@ -78,6 +78,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging-ktx")
     implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation("com.google.firebase:firebase-database-ktx")  // For cross-device timer sync
 
     // Google Play Services
     implementation("com.google.android.gms:play-services-base:18.5.0")

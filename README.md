@@ -1,12 +1,14 @@
 # FCM Notifier
 
-**Last Modified:** 2025-11-11
+**Last Modified:** 2025-11-14
 
 A native Android app that receives Firebase Cloud Messaging (FCM) push notifications and displays them as **full-screen notifications** with pulsing animations, similar to incoming call screens or Outlook calendar reminders.
 
 ## Features
 
 - **Full-Screen Notifications** - Wakes screen and displays notifications in full-screen mode like incoming calls
+- **Custom Ringtone** - Uses Samsung's "Atomic Bell" ringtone with intelligent looping behavior
+- **Smart Dismissal** - Tap or swipe banner to dismiss without opening the app
 - **Persistent History** - Notifications are stored locally until manually cleared
 - **Material Design 3** - Modern UI with Jetpack Compose
 - **Android 15 Compatible** - Fully tested on Samsung Galaxy S25 with Android 15
@@ -34,7 +36,10 @@ fcm-notifier/
 │   │   │   ├── FullScreenNotificationActivity.kt  # Full-screen notification UI
 │   │   │   ├── NotificationViewModel.kt           # State management with DataStore
 │   │   │   ├── NotificationChannelManager.kt      # Notification channel setup
-│   │   │   └── NotificationData.kt                # Data models
+│   │   │   ├── NotificationData.kt                # Data models
+│   │   │   ├── RingtonePlayer.kt                  # Atomic Bell ringtone manager
+│   │   │   ├── NotificationDismissReceiver.kt     # Handles notification swipe dismissal
+│   │   │   └── NotificationTapReceiver.kt         # Handles notification tap dismissal
 │   │   ├── res/                                   # Resources (layouts, strings, icons)
 │   │   └── AndroidManifest.xml                    # Permissions and components
 │   ├── build.gradle.kts                           # App-level Gradle config
@@ -145,9 +150,13 @@ fcm-test --title "Test Notification" --body "Hello from FCM!"
 2. **Google Play Services delivers** the message to your device (even in Doze mode)
 3. **FCMService.onMessageReceived()** is called (because it's data-only)
 4. **Custom notification is created** with full-screen intent and `CATEGORY_CALL`
-5. **Screen wakes up** and shows full-screen pulsing notification
-6. **Notification is saved** to local DataStore for history
-7. **User can dismiss** or tap to open main app
+5. **Atomic Bell ringtone plays** (loops continuously until dismissed)
+6. **Screen wakes up** (if locked) and shows full-screen pulsing notification
+7. **Notification is saved** to local DataStore for history
+8. **User can dismiss** by:
+   - Tapping the banner notification (clears notification, stops ringtone, stays in current app)
+   - Swiping the banner notification (clears notification, stops ringtone)
+   - Tapping "Dismiss" on full-screen (clears notification, stops ringtone)
 
 ## Troubleshooting
 
@@ -214,7 +223,8 @@ adb logcat | grep FullScreenNotificationActivity
 | Basic notification tray icon | Full-screen takeover like incoming calls |
 | Uses `notification` payload | Uses `data` payload only |
 | Works with default permissions | Requires `USE_FULL_SCREEN_INTENT` grant |
-| Standard notification sound | Custom sound + vibration + screen wake |
+| Standard notification sound | Custom Atomic Bell ringtone (loops until dismissed) |
+| Tap opens app | Tap dismisses notification without opening app |
 | No persistent history | Saves all notifications until cleared |
 
 ## Android 15 Compatibility Notes

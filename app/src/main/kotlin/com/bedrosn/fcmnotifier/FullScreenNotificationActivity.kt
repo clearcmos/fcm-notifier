@@ -1,11 +1,17 @@
 package com.bedrosn.fcmnotifier
 
 import android.app.KeyguardManager
+import android.app.NotificationManager
+import android.content.BroadcastReceiver
 import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.WindowManager
 import androidx.activity.ComponentActivity
+import androidx.core.content.ContextCompat
 import androidx.activity.compose.setContent
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
@@ -24,6 +30,22 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 class FullScreenNotificationActivity : ComponentActivity() {
+
+    private var currentTimerId: String? = null
+
+    // BroadcastReceiver for remote timer dismissal (when dismissed from KDE)
+    private val remoteDismissReceiver = object : BroadcastReceiver() {
+        override fun onReceive(context: Context?, intent: Intent?) {
+            val dismissedTimerId = intent?.getStringExtra(TimerSyncService.EXTRA_TIMER_ID)
+            Log.d(TAG, "Received remote dismiss broadcast for timer: $dismissedTimerId (current: $currentTimerId)")
+
+            // Only dismiss if this is our timer
+            if (dismissedTimerId != null && dismissedTimerId == currentTimerId) {
+                Log.d(TAG, "Timer matches - finishing FullScreenNotificationActivity")
+                finish()
+            }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -59,16 +81,76 @@ class FullScreenNotificationActivity : ComponentActivity() {
         // Get notification data from intent
         val title = intent.getStringExtra("title") ?: "New Notification"
         val body = intent.getStringExtra("body") ?: "You have a new message"
+        val notificationId = intent.getIntExtra("notificationId", -1)
+        val timerId = intent.getStringExtra("timerId")
+
+        // Store timerId for remote dismissal matching
+        currentTimerId = timerId
+        Log.d(TAG, "FullScreenNotificationActivity created for timer: $timerId")
+
+        // Register receiver for remote timer dismissal (when dismissed from KDE)
+        if (!timerId.isNullOrEmpty()) {
+            val filter = IntentFilter(TimerSyncService.ACTION_TIMER_DISMISSED_REMOTELY)
+            ContextCompat.registerReceiver(
+                this,
+                remoteDismissReceiver,
+                filter,
+                ContextCompat.RECEIVER_NOT_EXPORTED
+            )
+            Log.d(TAG, "Registered remote dismiss receiver for timer: $timerId")
+        }
 
         setContent {
             MaterialTheme {
                 FullScreenNotificationContent(
                     title = title,
                     body = body,
-                    onDismiss = { finish() }
+                    onDismiss = {
+                        // Stop the looping ringtone
+                        RingtonePlayer.stopRingtone()
+
+                        // Cancel the notification from the notification center
+                        if (notificationId != -1) {
+                            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+                            notificationManager.cancel(notificationId)
+                        }
+
+                        // Handle cross-device sync for timer notifications
+                        if (!timerId.isNullOrEmpty()) {
+                            // Unregister from local tracking
+                            TimerSyncService.getInstance(applicationContext).unregisterTimer(timerId)
+                            // Trigger cross-device sync via broadcast
+                            val dismissIntent = android.content.Intent(NotificationDismissReceiver.ACTION_NOTIFICATION_DISMISSED).apply {
+                                setPackage(packageName)
+                                putExtra(NotificationDismissReceiver.EXTRA_TIMER_ID, timerId)
+                            }
+                            sendBroadcast(dismissIntent)
+                        }
+
+                        finish()
+                    }
                 )
             }
         }
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        // Unregister broadcast receiver if it was registered
+        if (!currentTimerId.isNullOrEmpty()) {
+            try {
+                unregisterReceiver(remoteDismissReceiver)
+                Log.d(TAG, "Unregistered remote dismiss receiver")
+            } catch (e: Exception) {
+                Log.w(TAG, "Receiver already unregistered: ${e.message}")
+            }
+        }
+        // Ensure ringtone is stopped when activity is destroyed
+        RingtonePlayer.stopRingtone()
+    }
+
+    companion object {
+        private const val TAG = "FullScreenNotification"
     }
 }
 
